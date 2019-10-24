@@ -77,12 +77,12 @@ if __name__ == "__main__":
     # 3
     b = args.precision
     a = args.var_2
-    w_posteriror_mean = np.zeros((len(weights)))
+    w_posteriror_mean = np.zeros((len(weights), 1))
     w_posteriror_cov = np.identity(len(weights))*b
     weights = np.array(weights)
     first = True
 
-    while not np.allclose(w_posteriror_mean, weights, atol=0.1, rtol=0):
+    while not np.allclose(w_posteriror_mean[:,0], weights, atol=0.05, rtol=0) :
         data_x = 2 * np.random.random_sample(1) - 1
         data_x = data_x[0]
         e = normal_dist(0, np.sqrt(a))
