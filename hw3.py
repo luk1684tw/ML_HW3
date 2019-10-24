@@ -2,7 +2,7 @@ import argparse
 import math
 
 import numpy as np
-#  python .\hw3.py -m_1 0 -v_1 1 -w 1 2 3 4 5 -n 4 -v_2 2 -m_2 3 -s 5
+#  python .\hw3.py -m_1 0 -v_1 1 -w 1 2 3 4 -n 4 -v_2 2 -m_2 3 -s 5 -p 1
 
 def normal_dist(mean, std_dev):
     u, v = np.random.random_sample(2)
@@ -11,17 +11,16 @@ def normal_dist(mean, std_dev):
     return e
 
 
-def polynomial_dist(weights, X, e):
-    ans, power = e, 1
-    for w, x in zip(weights, X):
-        ans += w*x**power
-        power += 1
+def polynomial_dist(weights, x, e):
+    ans = e
+    for i, w in enumerate(weights):
+        ans += w*x**i
 
     return ans
 
 
 def plot_info(x, y, mean, variance, pd_mean, pd_var):
-    print (f"Add data point ({x[0]}, {y}):\n")
+    print (f"Add data point ({x}, {y}):\n")
     print (f"Posterior mean:\n")
     print (mean, "\n")
     print ("Poseterior variance:\n")
@@ -83,23 +82,28 @@ if __name__ == "__main__":
     weights = np.array(weights)
     first = True
 
-    while abs(np.sum(w_posteriror_mean - weights)) > 0.1*len(weights):
+    while not np.allclose(w_posteriror_mean, weights, atol=0.1, rtol=0):
         data_x = 2 * np.random.random_sample(1) - 1
+        data_x = data_x[0]
         e = normal_dist(0, np.sqrt(a))
         data_y = polynomial_dist(weights, data_x, e)
         
         if first:
-            X = np.array([data_x[0]**i for i in range(len(weights))])
-            y = np.array([data_y])
-            print (X)
-            print (y, "\n")
-
+            X = np.array([[data_x**i for i in range(len(weights))]])
+            y = np.array([[data_y]])
             w_posteriror_cov += a * np.dot(np.transpose(X), X)
-            w_posteriror_mean = a * np.dot(np.linalg.inv(w_posteriror_cov), np.transpose(X))
+            w_posteriror_mean = a * np.dot(np.linalg.inv(w_posteriror_cov), np.transpose(X)) * y[0, 0]
             first = False
-            plot_info(data_x, data_y, w_posteriror_mean, w_posteriror_cov, 0, 0)
         else:
-            X = np.append(X, np.array([[data_x**i for i in range(len(weights))]]))
+            X = np.append(X, np.array([[data_x**i for i in range(len(weights))]]), axis=0)
+            y = np.append(y, np.array([[data_y]]), axis=0)
+
+            s = np.linalg.inv(w_posteriror_cov)
+            m = np.copy(w_posteriror_mean)
+            w_posteriror_cov = a * np.dot(np.transpose(X), X) + s
+            w_posteriror_mean = np.dot(np.linalg.inv(w_posteriror_cov), a * np.dot(np.transpose(X), y) + np.dot(s, m))
+
+        plot_info(data_x, data_y, w_posteriror_mean, np.linalg.inv(w_posteriror_cov), 0, 0)
 
         # w_posteriror_mean = 
     
