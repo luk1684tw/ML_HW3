@@ -2,6 +2,7 @@ import argparse
 import math
 
 import numpy as np
+import matplotlib.pyplot as plt
 #  python .\hw3.py -m_1 0 -v_1 1 -w 1 2 3 4 -n 4 -v_2 2 -m_2 3 -s 5 -p 1
 
 def normal_dist(mean, std_dev):
@@ -19,7 +20,36 @@ def polynomial_dist(weights, x, e):
     return ans
 
 
-def plot_info(x, y, mean, variance, pd_mean, pd_var):
+def plot_image(mode, weights, e, a, predict_results, w_posteriror_cov=None):
+    plot_x = np.linspace(-2, 2, 100)
+    plt.plot(plot_x, polynomial_dist(weights, plot_x, e), 'k')
+
+    if mode != "running":
+        plt.plot(plot_x, polynomial_dist(weights, plot_x, e) + np.sqrt(a), 'r')
+        plt.plot(plot_x, polynomial_dist(weights, plot_x, e) - np.sqrt(a), 'r')
+        plt.savefig("ground.jpg")
+    
+    plt.scatter(predict_results[:, 0], predict_results[:, 1])
+
+    if mode != "running":
+        plt.savefig("predict.jpg")
+    else:
+        y_var = list()
+        for x in plot_x:
+            design_x = np.array([x**i for i in range(len(weights))])
+            y_var.append(1 / a + np.dot(np.dot(design_x, np.linalg.inv(w_posteriror_cov)), np.transpose(design_x)))
+
+        y_var = np.array(y_var)
+
+        y_predict = np.array([polynomial_dist(weights, x, e) for x in plot_x])
+        plt.plot(plot_x, y_predict + y_var, 'r')
+        plt.plot(plot_x, y_predict - y_var, 'r')
+        plt.savefig(f"NO{len(predict_results)}.jpg")
+
+    plt.close("all")
+    return
+
+def print_info(x, y, mean, variance, pd_mean, pd_var):
     print (f"Add data point ({x}, {y}):\n")
     print (f"Posterior mean:\n")
     print (mean, "\n")
@@ -81,8 +111,10 @@ if __name__ == "__main__":
     w_posteriror_cov = np.identity(len(weights))*b
     weights = np.array(weights)
     first = True
+    num_datum = 0
 
-    while not np.allclose(w_posteriror_mean[:,0], weights, atol=0.05, rtol=0) :
+    while not np.allclose(w_posteriror_mean[:,0], weights, atol=0.1, rtol=0):
+    # for time in range(5):
         data_x = 2 * np.random.random_sample(1) - 1
         data_x = data_x[0]
         e = normal_dist(0, np.sqrt(a))
@@ -93,7 +125,6 @@ if __name__ == "__main__":
             y = np.array([[data_y]])
             w_posteriror_cov += a * np.dot(np.transpose(X), X)
             w_posteriror_mean = a * np.dot(np.linalg.inv(w_posteriror_cov), np.transpose(X)) * y[0, 0]
-            first = False
         else:
             X = np.append(X, np.array([[data_x**i for i in range(len(weights))]]), axis=0)
             y = np.append(y, np.array([[data_y]]), axis=0)
@@ -103,7 +134,22 @@ if __name__ == "__main__":
             w_posteriror_cov = a * np.dot(np.transpose(X), X) + s
             w_posteriror_mean = np.dot(np.linalg.inv(w_posteriror_cov), a * np.dot(np.transpose(X), y) + np.dot(s, m))
 
-        plot_info(data_x, data_y, w_posteriror_mean, np.linalg.inv(w_posteriror_cov), 0, 0)
+        design_x = np.array([data_x**i for i in range(len(weights))])
+        y_predict_mean = np.dot(design_x, w_posteriror_mean)[0]
+        y_predict_var = 1 / a + np.dot(np.dot(design_x, np.linalg.inv(w_posteriror_cov)), np.transpose(design_x))
 
-        # w_posteriror_mean = 
-    
+        if first:
+            predict_results = np.array([[data_x, y_predict_mean]])
+            first = False
+        else:
+            predict_results = np.append(predict_results, [[data_x, y_predict_mean]], axis=0)
+
+        print_info(data_x, data_y, w_posteriror_mean, np.linalg.inv(w_posteriror_cov), y_predict_mean, y_predict_var)
+        num_datum += 1
+        if num_datum == 10:
+            plot_image(mode="running", weights=weights, e=e, a=y_predict_var, predict_results=predict_results, w_posteriror_cov=w_posteriror_cov)
+        elif num_datum == 50:
+            plot_image(mode="running", weights=weights, e=e, a=y_predict_var, predict_results=predict_results, w_posteriror_cov=w_posteriror_cov)
+            break
+
+    plot_image(mode="done", weights=weights, e=e, a=a, predict_results=predict_results)
