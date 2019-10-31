@@ -49,7 +49,6 @@ def plot_image(mode, weights, e, a, predict_results, w_posteriror_cov=None):
     plt.close("all")
     return
 
-
 def print_info(x, y, mean, variance, pd_mean, pd_var):
     print (f"Add data point ({x}, {y}):\n")
     print (f"Posterior mean:\n")
@@ -109,17 +108,20 @@ if __name__ == "__main__":
     b = args.precision
     a = args.var_2
     w_posteriror_mean = np.zeros((len(weights), 1))
+    w_prior_mean = np.copy(w_posteriror_mean)
     w_posteriror_cov = np.identity(len(weights))*b
     weights = np.array(weights)
     first = True
     num_datum = 0
 
-    while not np.allclose(w_posteriror_mean[:,0], weights, atol=0.1, rtol=0):
-    # for time in range(5):
+    while first or not np.allclose(w_posteriror_mean[:, 0], w_prior_mean[:, 0], atol=0.0001, rtol=0):
+    # while not np.allclose(w_posteriror_mean[:,0], weights, atol=0.3, rtol=0):
+        print (np.sum(np.absolute(w_posteriror_mean - w_prior_mean), axis=0))
         data_x = 2 * np.random.random_sample(1) - 1
         data_x = data_x[0]
         e = normal_dist(0, np.sqrt(a))
         data_y = polynomial_dist(weights, data_x, e)
+        w_prior_mean = np.copy(w_posteriror_mean)
         
         if first:
             X = np.array([[data_x**i for i in range(len(weights))]])
@@ -129,8 +131,7 @@ if __name__ == "__main__":
         else:
             X = np.append(X, np.array([[data_x**i for i in range(len(weights))]]), axis=0)
             y = np.append(y, np.array([[data_y]]), axis=0)
-
-            s = np.linalg.inv(w_posteriror_cov)
+            s = np.copy(w_posteriror_cov)
             m = np.copy(w_posteriror_mean)
             w_posteriror_cov = a * np.dot(np.transpose(X), X) + s
             w_posteriror_mean = np.dot(np.linalg.inv(w_posteriror_cov), a * np.dot(np.transpose(X), y) + np.dot(s, m))
@@ -151,6 +152,6 @@ if __name__ == "__main__":
             plot_image(mode="running", weights=weights, e=e, a=y_predict_var, predict_results=predict_results, w_posteriror_cov=w_posteriror_cov)
         elif num_datum == 50:
             plot_image(mode="running", weights=weights, e=e, a=y_predict_var, predict_results=predict_results, w_posteriror_cov=w_posteriror_cov)
-            break
 
+    print ("finish loss:", np.sum(np.absolute(w_posteriror_mean - w_prior_mean), axis=0))
     plot_image(mode="done", weights=weights, e=e, a=a, predict_results=predict_results)
