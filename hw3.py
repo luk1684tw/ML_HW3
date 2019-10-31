@@ -27,12 +27,12 @@ def plot_image(mode, weights, e, a, predict_results, w_posteriror_cov=None):
     if mode != "running":
         plt.plot(plot_x, polynomial_dist(weights, plot_x, e) + np.sqrt(a), 'r')
         plt.plot(plot_x, polynomial_dist(weights, plot_x, e) - np.sqrt(a), 'r')
-        plt.savefig("ground.jpg")
+        plt.savefig("ground.png")
     
     plt.scatter(predict_results[:, 0], predict_results[:, 1])
 
     if mode != "running":
-        plt.savefig("predict.jpg")
+        plt.savefig("predict.png")
     else:
         y_var = list()
         for x in plot_x:
@@ -44,10 +44,11 @@ def plot_image(mode, weights, e, a, predict_results, w_posteriror_cov=None):
         y_predict = np.array([polynomial_dist(weights, x, e) for x in plot_x])
         plt.plot(plot_x, y_predict + y_var, 'r')
         plt.plot(plot_x, y_predict - y_var, 'r')
-        plt.savefig(f"NO{len(predict_results)}.jpg")
+        plt.savefig(f"NO{len(predict_results)}.png")
 
     plt.close("all")
     return
+
 
 def print_info(x, y, mean, variance, pd_mean, pd_var):
     print (f"Add data point ({x}, {y}):\n")
